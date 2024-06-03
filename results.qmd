@@ -1,20 +1,10 @@
 # Results
 
-Overal dataset Distribution of papers over:
-
--   time
-
--   country
-
-```{r}
-# read final dataset here 
-```
-
 X articles were included with Y model records for meta-analysis extracted. Most studies were from countries
 
 ::: {#tbl-extracted_features}
 | Feature                 | Definition                                                                                    | value/categories                                                                                 |
-|-------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+|-----------------|---------------------------|----------------------------|
 | Paper ID                | DOI used as identification number of the article                                              |                                                                                                  |
 | Author(s), year, DOI    | Name(s) of authers                                                                            |                                                                                                  |
 | Title                   | Title of the article                                                                          |                                                                                                  |
@@ -39,27 +29,109 @@ X articles were included with Y model records for meta-analysis extracted. Most 
 : A listing of extracted features considered for the content analysis of included articles
 :::
 
-### Discriptives stats
+### Descriptive stats
 
-#### Study selection
+```{r}
+library(tidyverse)
+library(readxl)
+extracted_features <- read_excel("extracted_features.xlsx", sheet = "Include",  na = "NA")
+
+
+citations<- read.csv("appendix/app1-paper_selection/citations.csv")
+
+
+citations$AuthorYear <- paste(sapply(strsplit(citations$Author, ", "), 
+                                     `[`, 1), "et al.", 
+                              citations$Publication.Year)
+
+citations_needed<- subset(citations, DOI %in% extracted_features$DOI, 
+                          select = c(DOI, AuthorYear, Publication.Title, Publication.Year))
+
+dat <- inner_join(citations_needed, extracted_features, by = "DOI")
+
+
+```
+
+Overal dataset Distribution of papers over:
+
+-   time
+
+    ```{r}
+    ggplot(citations)+
+      geom_histogram(mapping = aes(x=Publication.Year), bins = 30)
+    ```
+
+#### Randomly Selected Studies
 
 -   which algorithms performed better (look if pairwise comparison is possible
 
 -   countries
 
+```{r}
+dat %>%
+  group_by(AuthorYear, location) %>%
+  summarise(counts = n())
+```
+
 -   journals
 
 -   does OA increase with publication date
 
-#### Study characteristics
+```{r}
+ggplot(dat, mapping = aes(x =Publication.Year, y = OA_reported, colour = AuthorYear))+
+  geom_point() +
+  geom_smooth(formula = 'y ~ x', method = "lm", se = FALSE, color = "black") 
 
--   table of article included (I think this will go in the appendix)
+```
+
+```{r}
+mean_data <- dat %>%
+  group_by(Publication.Year, AuthorYear) %>%
+  summarise(
+    mean_OA_reported = mean(OA_reported, na.rm = TRUE),
+    min_OA_reported = min(OA_reported, na.rm = TRUE),
+    max_OA_reported = max(OA_reported, na.rm = TRUE)
+  )
+
+
+ggplot(mean_data, aes(x = Publication.Year, y = mean_OA_reported, colour = AuthorYear)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = min_OA_reported, ymax = max_OA_reported), width = 0.2) +
+  geom_smooth(formula = 'y ~ x', method = "lm", se = FALSE, color = "black") + 
+  labs(x = "Publication Year", 
+       y = "Mean OA Reported", 
+       title = "Mean OA Reported + Range 'Error Bars'") +
+  theme(legend.position = "none")
+```
+
+#### Study characteristics
 
 -   table: description of information extracted from the included papers
 
 -   total number papers
 
+```{r}
+length(unique(dat$AuthorYear))
+```
+
 -   distributions of features
+
+```{r}
+table(dat$AuthorYear ,dat$RS_devices)
+```
+
+```{r}
+table(dat$research_theme)
+```
+
+```{r}
+table(dat$model_group)
+```
+
+```{r}
+
+
+```
 
 -   maybe pair plot to show associations between features
 

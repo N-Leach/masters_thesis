@@ -60,17 +60,16 @@ extracted_features <- read_excel("extracted_features.xlsx", sheet = "Include",  
 
 citations<- read.csv("appendix/app1-paper_selection/citations.csv")
 
-citations$AutherYear <- paste(strsplit(citations$Author, "[,]")[[1]][1], "et al,", citations$Publication.Year) 
+
+citations$AuthorYear <- paste(sapply(strsplit(citations$Author, ", "), 
+                                     `[`, 1), "et al.", 
+                              citations$Publication.Year)
 
 citations_needed<- subset(citations, DOI %in% extracted_features$DOI, 
-                          select = c(DOI, AutherYear, Publication.Title))
+                          select = c(DOI, AuthorYear, Publication.Title))
 
-
-strsplit(citations$Author, "[,]")[[1]][1]
-sub("\\|.*", "", citations$Author)
 dat <- inner_join(citations_needed, extracted_features, by = "DOI")
 
-length(unique(dat$DOI))
 
 
 ```
