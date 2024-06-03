@@ -1,0 +1,43 @@
+# Background? {style="text-align: justify"}
+
+our world in data SDGs tracker: https://ourworldindata.org/sdgs
+
+Maybe discuss here the shortage of information around the world: Burke et al.,
+
+## Remote sensing
+
+TO DO:
+
+-   Add some background information
+
+-   suggestions for interesting features
+
+-   explain features (bands etc)
+
+## Modeling approaches
+
+Simple models possible however because of the nature of RS data...
+
+indexes: computed from imagery: proportions of different wave lengths examples of non machine learning approaches: crop_5
+
+### Machine Learning
+
+Machine Learning is
+
+why its needed in remote sensing?
+
+types of machine learning:
+
+possible grouping
+
+![](Jafarzadeh2022.png)
+
+#### Assessing model performance
+
+-   describe some performance metrics
+
+## 
+
+#### [Possible Additions:]{style="color: cornflowerblue"}
+
+-   [table of previous reviews in related topics]{style="color: cornflowerblue"}

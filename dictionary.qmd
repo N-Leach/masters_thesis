@@ -1,0 +1,31 @@
+# Dictionary
+
+| variable                 | description                                                                       | example                                                   |
+|------------------|-----------------------------------|-------------------|
+| author, year, DOI        | publication information.                                                          |                                                           |
+| research_theme           | aim of the research, e.g. what is being classified and which sustainability goals | crop yeild, water quality, urban                          |
+| RS_device                |                                                                                   | satellite , drone, plane, Unmanned Aerial Vehicles (UAVs) |
+| RS_device_specifics      |                                                                                   | Sentinel-2, Landsat-8                                     |
+| ancillary                | Additional (non- remote sensed data used)                                         | {0 = only remote sensed data, 1= additional matrial used} |
+| type\_                   | active vs optical                                                                 |                                                           |
+| bands                    | list of the bands used                                                            |                                                           |
+| RS_spectral_bands_no     | number of bands                                                                   |                                                           |
+| RS_spatital_resolution_m |                                                                                   |                                                           |
+| spectral_indices         | 0,1                                                                               |                                                           |
+|                          | 0, 1                                                                              |                                                           |
+| model_group              |                                                                                   |                                                           |
+| number_classes           |                                                                                   |                                                           |
+| fraction_majority_class  |                                                                                   |                                                           |
+| total                    |                                                                                   |                                                           |
+| OA                       |                                                                                   |                                                           |
+
+: Maybe use [@jafarzadeh2022] groups for the model group
+
+```{r}
+knitr::include_graphics("images/Jafarzadeh2022.png")
+```
+
+```{}
+```
+
+Because the first 6 papers are so different, the agreed papers are split into classification and regression

@@ -1,0 +1,47 @@
+$if(has-frontmatter)$
+\frontmatter
+$endif$
+
+
+
+$if(title)$
+\cleardoublepage
+\thispagestyle{empty}
+% Logo
+\includegraphics[width=\textwidth, height = 3cm]{images/ul.logo.png} 
+
+\vspace{2pt}\vspace{-\baselineskip} % Whitespace between lines
+	\rule{\textwidth}{0.4pt}\par % Thin horizontal line
+{\centering
+\hbox{}\vskip 0cm plus 1fill
+{\Huge\bfseries $title$ \par}
+$if(subtitle)$
+\vspace{3ex}
+{\Large\bfseries $subtitle$ \par}
+$endif$
+
+\vspace{12ex}
+
+$for(by-author)$
+{\Large\bfseries $by-author.name.literal$ \par}
+\vspace{3ex}
+
+
+{\bfseries\large Defended on $date$ \par}
+\vspace{12ex}
+
+{\bfseries\large MASTER THESIS \par}
+\vspace{3ex}
+$for(by-author.affiliations)$%
+$if(it.department)$%
+{\bfseries\large $it.department$ \par}
+\vspace{3ex}
+$endif$%
+{\bfseries\large $it.name$ \par}
+$endfor$$endfor$%
+}
+\vspace{12ex}
+\vspace{2pt}\vspace{-\baselineskip} % Whitespace between lines
+	\rule{\textwidth}{1pt}\par % Thick horizontal line
+	
+$endif$

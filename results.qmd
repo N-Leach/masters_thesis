@@ -1,0 +1,100 @@
+# Results
+
+Overal dataset Distribution of papers over:
+
+-   time
+
+-   country
+
+```{r}
+# read final dataset here 
+```
+
+X articles were included with Y model records for meta-analysis extracted. Most studies were from countries
+
+::: {#tbl-extracted_features}
+| Feature                 | Definition                                                                                    | value/categories                                                                                 |
+|-------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| Paper ID                | DOI used as identification number of the article                                              |                                                                                                  |
+| Author(s), year, DOI    | Name(s) of authers                                                                            |                                                                                                  |
+| Title                   | Title of the article                                                                          |                                                                                                  |
+| Year                    | Publication Year                                                                              |                                                                                                  |
+| Publication name        | Name of journal that published paper                                                          |                                                                                                  |
+| Location                | Location of the data used (country level)                                                     |                                                                                                  |
+| Research Theme          | Area of research                                                                              | TO DO: Add categories                                                                            |
+| RS device               | Type of RS device                                                                             | Satellite , Drone, Plane, Unmanned Aerial Vehicles (UAVs)                                        |
+| RS device specifics     | Specific device name                                                                          | Sentinel-2, Landsat-8                                                                            |
+| RS device               | Grouping?                                                                                     |                                                                                                  |
+| Ancillary data          | Use of non-RS data in the model                                                               | {0 = only remote sensed data, 1= additional data used} Additional (non- remote sensed data used) |
+| Training/Test set       | Some confusion here if the test set or training set used, maybe I will add this as a feature! | test, train, not specified, ....                                                                 |
+| RS bands                | list of the bands used                                                                        |                                                                                                  |
+| RS_spectral_bands_no    | number of bands used                                                                          |                                                                                                  |
+| RS_spatital_resolution  | in meters                                                                                     |                                                                                                  |
+| model_group             | Algorithm group used                                                                          | Random forest (RF), artificial neural network (ANN), support vector machine (SVM),               |
+| number_classes          | The number of classes to predict                                                              |                                                                                                  |
+| fraction_majority_class | The fraction of the largest class                                                             |                                                                                                  |
+| Total                   | Sample size                                                                                   |                                                                                                  |
+| Accuracy metric         | Measure used to assess the predictive performance of the ML method applied                    | Overall Accuracy (OA)                                                                            |
+
+: A listing of extracted features considered for the content analysis of included articles
+:::
+
+### Discriptives stats
+
+#### Study selection
+
+-   which algorithms performed better (look if pairwise comparison is possible
+
+-   countries
+
+-   journals
+
+-   does OA increase with publication date
+
+#### Study characteristics
+
+-   table of article included (I think this will go in the appendix)
+
+-   table: description of information extracted from the included papers
+
+-   total number papers
+
+-   distributions of features
+
+-   maybe pair plot to show associations between features
+
+#### **Meta-Analysis Results**:
+
+-   pooled effect sizes and confidence intervals.
+
+-   maybe with forest plots to visualize the individual study estimates (I have multiple results from one paper so maybe not the best method)
+
+-   overall effect size
+
+-   degree of heterogeneity
+
+#### **Meta-Regression**
+
+##### model results
+
+-   results of the model, estimated coefficients, etc (table)
+
+-   what features to add in the model
+
+-   interpretation of results in the table
+
+-   testing of assumptions (link to appendix?)
+
+##### model fit
+
+-   predictions vs observations
+
+-   make table of the features and the predicted outcome (Klingwort&Toepoel)
+
+::: {style="color: cornflowerblue"}
+#### Reporting biases
+
+-   funnel plots? TO DO: look at what is appropriate
+
+#### Certainty of evidence
+:::

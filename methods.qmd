@@ -1,0 +1,159 @@
+---
+execute:
+  echo: false
+  enabled: true
+tbl-cap-location: top
+---
+
+# Methods
+
+::: {style="text-align: justify"}
+This meta-analysis was conducted and reported based on the PRISMA (Preferred Reporting Items for Systematic Reviews and Meta-Analyses) guidelines [@page2021]. Citation manager: Zotero and analysis using `r version$version.string`.
+
+#### Eligibility criteria & Search strategy
+
+The data collected for this report was extracted from peer-reviewed articles, published between January 2018 and December 2023. I gathered these articles from several academic research databases including the Web of Science (WOS), and ScienceDirect (see @fig-prisma for the full list) on January 15 and 16, 2024. The search terms where "Remote sensing" AND "machine learning" AND "sustainable development goals". The search results from the databases were downloaded to a RIS file and imported to Zotero. Duplicate articles were dealt with using Zotero's merge duplicates function. A total of 811 articles remained after review articles and non-research articles were removed
+
+::: {style="color: cornflowerblue"}
+(I will link to appendix for more info).
+:::
+
+#### Selection process
+
+A random sample of 200 articles was drawn for title and abstract screening. These potentially relevant articles were screened independently by three reviewers. Using the R package \`metagear\`[@metagear-2] the abstracts were selected according to the following criteria:
+
+-   publications utilizing remote sensing and machine learning techniques
+
+-   quality assessment in the from of (RMSE, Overall accuracy, .... )
+
+From the 200 papers 57 were deemed potentially relevant by all three reviewers.
+
+[\[TO DO: discuss what we will do about the disputed articles\].]{style="color: cornflowerblue"}
+
+The first 10 papers (of 57) were inspected.
+
+-   get an idea of what features to extract
+
+-   estimate the number of total relevant articles
+
+It was decided to focus on papers related to classification techniques. I screened the titles and abstracts of the 57 articles using \`metagear\` categorizing them to classification (40) or regression papers. Furthermore, Overall Accuracy (OA) was the most commonly reported outcome metric and therefore it was decided to include all papers that report (OA).
+:::
+
+::: {#fig-prisma}
+![](appendix/app1-paper_selection/fig_PRISMA.png)
+
+PRIMSA flow diagram for manuscript selection. Note: \*number of records removed four where not journal articles and 27 were omitted for being reviews. A random sample of 200 of the total 884 was drawn and reviewed by three independent reviewers. A total of 57 records were left, 40 of which were deemed to be classification papers. WOS: Web of Science
+:::
+
+#### Data collection process & Data items
+
+::: {style="text-align: justify"}
+Using these papers and previous systematic reviews a list of potential study features was made and structured in a table for data collection. Various aspects of the articles were collected, including: general study details such as authors, publication year, the study objectives, the data source. See @sec-results @tbl-extracted_features outlines all the extracted features.
+:::
+
+## Meta-analysis
+
+The aims of systematic review and meta-analysis is to combine, summarize, analyse and interpret available evidence regarding a defined field or research question. Traditionally, they aim to summarizes quantitative outcomes :
+
+-   ie a single outcome variable has been **measured in the same way** across all study subjects.
+
+-   for example the effect of a medication on...
+
+-   this is refered to as an e**ffect size**
+
+-   the selected effect size must be:
+
+    -   **Comparable**. the same meaning across all studies. Let us take math skills as an example again. It makes no sense to pool differences between experimental and control groups in the number of points achieved on a math test when studies used different tests. Tests may, for example, vary in their level of difficulty, or in the maximum number of points that can be achieved.
+
+    -   **Computable**. We can only use an effect size metric for our meta-analysis if it is possible to derive its numerical value from the primary study. It must be possible to calculate the effect size for all of the included studies based on their data.
+
+    -   **Reliable**. Even if it is possible to calculate an effect size for all included studies, we must also be able to **pool** them statistically. To use some metric in meta-analyses, it must be at least possible to calculate the **standard error** (see next chapter). It is also important that the format of the effect size is suited for the meta-analytic technique we want to apply, and does not lead to errors or biases in our estimate.
+
+    -   **Interpretable**. The type of effect size we choose should be appropriate to answer our research question. For example, if we are interested in the strength of an association between two continuous variables, it is conventional to use correlations to express the size of the effect. It is relatively straightforward to interpret the magnitude of a correlation, and many researchers can understand them. In the following chapters, we will learn that it is sometimes not possible to use outcome measures which are both easy to interpret **and** ideal for our statistical computations. In such cases, it is necessary to transform effect sizes to a format with better mathematical properties before we pool them.
+
+.In this case.... the studies address different subject matter.... this is referred to as the **"applies and oranges" problem**. Robert Rosenthal, a pioneer in meta-analysis, was questioned about the validity of conducting a meta-analysis when the studies involved have significant differences. He responded that it is sensible to combine apples and oranges if your goal is to create a fruit salad @borenstein_introduction_2013. Here studies with variable research aims are being collected however the aim is to make general comments about machine learning applications for remote sensed, SDG problems: fruit salad with universal applicability.
+
+a more thorougher discussion of the limitations of these are is in @sec-writing/discussion
+
+-   https://pubmed-ncbi-nlm-nih-gov.ezproxy.leidenuniv.nl/27620683/
+
+-   Questionable Meta-research Practices
+
+#### "Apples and Oranges" Problem
+
+#### Study risk of bias assessment
+
+-   ::: {style="color: cornflowerblue"}
+    -   papers that do not include confusion matrix, or have test set results, or....
+
+    -   TO DO: look at: "utilize methodological quality and bias assessment tool (CLEAR-NPT, Coleman, Modified Coleman, CONSORT, Pedro, Cochrane, Delphi, Detsky, Downs and Black, Jadad, Level of evidence, MINORS, Newcastle-Ottawa, QUADAS, Quality Appraisal Tool, STARD, Strobe, AMSTAR, R-AMSTAR, etc.)"?
+
+    -   https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0234722#pone.0234722.s004
+
+    -   https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/s12874-023-01849-0
+    :::
+
+#### Effect measures & Synthesis Methods
+
+::: {style="text-align: justify"}
+Overall accuracy (OA) is defined as the probability of a correct classification [@magnussen2021]
+:::
+
+$$
+\text{Overall Accuracy (OA)} =  \frac{\text{True Positive + True Negative}}{N}
+$$
+
+proportion there for the standard error is
+
+standard error: $$
+SE_p =  \sqrt \frac{p(1-p)}{N} \\
+\text{Where p is probability of a correct classification (OA)}
+$$
+
+#### Meta analysis
+
+RQ: Is there heterogeneity between studies:
+
+"It is highly advised to specify the type of model you used in the methods section of your meta-analysis report."
+
+-   expect considerable between study heterogeneity
+
+    -   use random-effects model to pool the effect size
+
+    -   TO DO: choose between methods to estimate variance $\tau^2$
+
+    -   using {meta} package: metaprop for proportions:
+
+        -   logit-transform proportions before the meta-analysis is performed
+
+        -   apply a (generalized) logistic mixed-effect model to estimate the pooled effect
+
+-   measures of heterogeneity, forest plot
+
+-   .....
+
+#### Meta-Regression model
+
+RQ: What factors affect the probability of correct classification (Overall accuracy) of machine learning algorithms?
+
+Mixed effects model:
+
+$$
+\hat{\theta}_k = \theta +\beta_1 x_{1k} ... + \beta_n x_{nk} + \epsilon_k + \zeta_k    
+$$
+
+Where $\epsilon_k$ sampling error deviation from the true effect size by the study $\zeta_k$ random effect... $x_i$ are the explanatory variables (or features):....
+
+TO DO:
+
+-   rewrite as a probit model
+
+-   write about model fit assessments, choosing features (step-wise, or other) etc
+
+-   And which assumptions to check
+
+### 
+
+#### Reporting bias assessment
+
+#### Certainty assessment

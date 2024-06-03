@@ -1,0 +1,17 @@
+# TO DO List
+
+Paper outline:
+
+1.  Introduction
+2.  Methods:
+    1.  protocol for selecting articles
+    2.  features
+    3.  meta-analysis
+3.  Results
+4.  discussion
+
+Extras:
+
+-   https://rstudio.github.io/renv/articles/renv.html
+
+-   

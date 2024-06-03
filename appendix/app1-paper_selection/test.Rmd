@@ -1,0 +1,636 @@
+---
+title: "MetaGear"
+author: "Nina Leach, S2368889"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Data
+
+```{r}
+library("readxl")
+notes<- read_excel("database_notes.xlsx")
+```
+
+Systematic literature search was performed in "list" on January 15 and 16, 2024, using search terms to identify eligible articles with the limitations on the publication year: 01/01/2018 to 31/13/2023. The keywords used for the search included "Remote sensing" AND "machine learning" AND "sustainable development goals"" (see table "database_notes.csv")
+
+Missing DOI were identified using the zotero "no DOI" tag. the DOI was imported either via zotero add on ("manage DOI") or paper was opened and re-added to zotero via the chrome zotero add on.
+
+## meta-analysis database
+
+```{r}
+
+sum(notes["Applicable Results"])
+
+```
+
+```{r}
+# total by academic databases
+paste(notes$Database, "=", notes$`Applicable Results`) 
+
+```
+
+These search results were downloaded to a RIS file and imported to Zotero. Zotero's merge duplicates function was used and after which a csv file was exported. Scopus was not searched.
+
+```{r}
+all_citations <- read.csv("all_citations_j19.csv",  
+                          na.strings=c("","NA")) # make blank cells NA
+all_citations <- subset(all_citations, 
+                        Item.Type == "journalArticle" & 
+                          Title != "CALL FOR PAPERS")
+# some reports and a call for papers made it in 
+```
+
+After removing duplicates and filtering on article type total papers
+
+```{r}
+nrow(all_citations)
+```
+
+## file checks
+
+```{r}
+library(stringr)
+library(dplyr)
+
+# looking if there are abstracts that are missing text 
+sum(is.na(all_citations$Abstract.Note))
+sum(is.na(all_citations$Author))
+sum(is.na(all_citations$DOI))
+sum(is.na(all_citations$Publication.Year))
+```
+
+### Retrieving missing abstacts
+
+ref: <https://rpubs.com/cschwarz/web_scrape>
+
+```{r}
+# missing_index <- which(is.na(all_citations$Abstract.Note))
+# not_missing <- all_citations[!is.na(all_citations$Abstract.Note), ]
+
+# retrieve abstract function
+grab_info <- function(article){
+  if(is.na(article["Abstract.Note"])) {
+     article_link <- paste0("https://doi.org/", article["DOI"])
+     a_html <- try(read_html(article_link), silent = TRUE)
+     if (inherits(a_html, 'try-error')) {
+       article["Abstract.Note"] <- NA
+       }
+     else {
+       abstract <- a_html %>% html_node(".hlFld-Abstract .last") %>% html_text()
+       article["Abstract.Note"] <- abstract
+       }
+  }
+  return(article)
+}
+
+library(parallel)
+
+cl <- makeCluster(detectCores())
+clusterExport(cl,varlist = c("grab_info"))
+clusterEvalQ(cl,library(rvest))
+clusterEvalQ(cl,library(stringr))
+
+library(pbapply)
+citations <- as.data.frame(t(pbapply(all_citations, 1, grab_info, cl=cl)))
+sum(is.na(citations$Abstract.Note))
+
+```
+
+TO DO: - manually add the missing 6 using zotero
+
+## Keywords to highlight
+
+To get a feeling for the words that might help with screening the abstracts a list of potential keywords both to omit and in order to keep the paper.
+
+```{r}
+# to make searching for words easier and because metagear is case sensitive 
+citations$Title <- tolower(citations$Title) 
+citations$Abstract.Note <- tolower(citations$Abstract.Note) 
+```
+
+```{r}
+
+keywords <- c(
+    
+  # general
+  "empirical", "result", "predictive",
+  "analysis", "sustainable development goal", 
+  "sustainable development",
+              
+  # data related 
+  "remotely sensed", "remote sensing", "satellite", "earth observation", 
+  
+  # models
+  "deep learning", "machine learning", "classification", "classifier",
+  "regression", "supervised", "supervized", "test set", "training set",
+  " cart ", "svm", " rf ", " ann ", "random forest", "support vector machine", 
+  "regression tree", "decision tree", "neural network", "boosting", "bagging", 
+  "gradient", "bayes",
+  
+  # quality metrics
+  "overall accuracy", "accuracy", "coefficient of determination", "rmse", "mse",
+  "f1", "precision", "auc", " roc ", "recall","sensitivity", "specificity",
+  "mean absolute error", "error", "mae",
+  
+  #to omit 
+  "systematic review", "meta-analysis" , "review"
+)
+
+word_count <- data.frame(keyword = NA, 
+                         count = NA)
+
+for (i in 1:length(keywords)) {
+  word_count[i,1]<- keywords[i]
+  word_count[i,2]<- sum(str_detect(citations$Abstract.Note, keywords[i]), na.rm = TRUE)
+  
+}
+word_count
+```
+
+Inspecting these papers see if they are what I am looking for and more ideas for keywords
+
+```{r}
+citations[which(str_detect(citations$Abstract.Note, " roc "))[1],"Abstract.Note"]
+```
+
+### Keywords that indicate rejecting the paper
+
+checking titles first
+
+```{r}
+to_omit <- citations[which(str_detect(citations$Title, "review")), ]
+to_omit$Title
+
+```
+
+After reviewing this titles safe to omit these before metagear screaning
+
+```{r}
+citations <- citations[which(!str_detect(citations$Title, "review")), ]
+write.csv(citations, file = "citations.csv")
+```
+
+```{r}
+# to look at citation if needed
+quick_look <- function(article){
+  article_link <- paste0("https://doi.org/", article["DOI"])
+  return(browseURL(article_link))
+}
+```
+
+#### Looking at other ways to automatircally omit papers
+
+```{r}
+which(str_detect(citations$Abstract.Note, "systematic review"))
+which(str_detect(citations$Abstract.Note, "meta-analysis"))
+which(str_detect(citations$Abstract.Note, "prisma"))
+citations$Abstract.Note[which(str_detect(citations$Abstract.Note, "prisma"))[1]]
+```
+
+"prisma" not a good word to filter on as an example of imaging spectroscopy sensors is a spaceborne prisma
+
+# Abstract screaning
+
+## Metagear
+
+add info about package
+
+```{r}
+# intaling dependencies
+#install.packages("BiocManager"); 
+#BiocManager::install("EBImage")
+library(metagear)
+```
+
+## pilot
+
+```{r}
+pilot_metagear <-
+  all_updated[which(
+    citations(citations$Abstract.Note, "remote sensing") &
+      str_detect(citations$Abstract.Note, "machine learning") &
+      str_detect(citations$Abstract.Note, "sustainable development")
+  ), ]
+```
+
+```{r}
+# prime the study‐reference dataset
+theRefs <- effort_initialize(pilot_metagear)
+
+# here one would = distribute screening effort to a team, in this case that is one person 
+# and save to separate files for each team member
+theRefs_unscreened <- effort_distribute(theRefs, reviewers = "nina_pilot", 
+                                        effort = 100, save_split = TRUE)
+
+```
+
+### Screening abstracts of references
+
+note to self: highlightkeywords is case specific
+
+```{r}
+# initialize screener GUI
+abstract_screener("effort_nina3.csv", aReviewer = "nina_pilot", 
+                  abstractColumnName = "Abstract.Note", 
+                                        titleColumnName = "Title",
+                                        highlightKeywords = keywords)
+pilot_screened <- read.csv("effort_nina_pilot.csv")
+```
+
+Other reviews found in pilot
+
+from pixels to sustainability: trends and collaborations in remote sensing for advancing sustainable cities and communities (sdg 11)
+
+a research landscape bibliometric analysis on climate change for last decades: evidence from applications of machine learning
+
+a survey of machine learning and deep learning in remote sensing of geological environment: challenges, advances, and opportunities
+
+green and sustainable biomass supply chain for environmental, social and economic benefits
+
+No further automatic filtering done
+
+## Testing Abstract Screening proccess
+
+```{r}
+citations <- read.csv("citations.csv")
+
+```
+
+### PRISMA diagram so far
+
+```{r}
+library(PRISMAstatement)
+
+prisma(found = sum(notes$`Applicable Results`), # total articles imported into Zotero 
+       found_other = 0,
+       no_dupes = nrow(all_citations), 
+       screened = nrow(citations),
+       # add box for abstract screening these are removed for other before abstract screening
+       screen_exclusions = nrow(all_citations) - nrow(citations), 
+       full_text = 300,
+       full_text_exclusions = 0, 
+       qualitative = 0, 
+       quantitative = 0,
+       width = 800, height = 800)
+
+
+```
+
+TO DO: - Fit all database n in the diagram - import full zotero file before merging duplicates (look if any of the db are redundent)
+
+### Phase one
+
+```{r}
+cite_testset <- citations[sample(nrow(citations), size=100), ] # set.seed next time!
+
+```
+
+Random sample of 100 papers was compaired by three reviewers using metagear and the\
+keywords (from line 144).
+
+```{r}
+metagear_abstract_screening<- function(data, reviewer){
+  library(metagear)
+  # prime the study‐reference dataset
+  theRefs <- effort_initialize(data)
+  # here one would = distribute screening effort to a team, in this case that is one person 
+  # and save to separate files for each team member
+  theRefs_unscreened <- effort_distribute(theRefs, reviewers = reviewer, 
+                                        effort = 100, save_split = TRUE)
+}
+
+
+# the following was run for each reviewer 
+# eample nina 
+metagear_abstract_screening(cite_testset, "nina")
+
+# initialize screener GUI
+abstract_screener("nina_effort.csv", aReviewer = "nina", 
+                  abstractColumnName = "Abstract.Note", 
+                                        titleColumnName = "Title",
+                                        highlightKeywords = keywords)
+
+
+```
+
+#### Result
+
+```{r}
+nina_1<- read.csv("phase1/effort_nina.csv")
+jonas_1<- read.csv("phase1/effort_jonas.csv")
+joep_1<- read.csv("phase1/effort_joep.csv")
+table(nina$INCLUDE, jonas$INCLUDE, joep$INCLUDE)
+ftable(nina$INCLUDE, jonas$INCLUDE, joep$INCLUDE,  dnn = c("nina", "jonas", "joep"))
+
+sum(jonas$INCLUDE == "YES")
+sum(nina$INCLUDE == "YES")
+sum(joep$INCLUDE == "YES")
+```
+
+All agreed on YES 36% and NO 29%
+
+```{r}
+disagreement <- nina[which(nina$INCLUDE == "NO" &joep$INCLUDE == "YES"), ]
+
+```
+
+After reviewing cases that contradicted, points learnt: - not all the papers included use remote sensing data, these were difficult to categories and might require opening the full paper. Therefore, the next trail will be:
+
+-   phase 2a: screening for empirical research, rather than papers reviewing or discussing methods.
+
+-   phase 2b: from the papers that should be included, we will then assess them more carefully: remote sensing data, machine learning.
+
+### Phase 2A
+
+```{r}
+keywords <- c(
+    
+  # general
+  "empirical", "result", "predictive",
+  "analysis", "sustainable development goal", 
+  "sustainable development",
+  
+  # models
+  "deep learning", "machine learning", "classification", "classifier",
+  "regression", "supervised", "supervized", "test set", "training set",
+  " cart ", "svm", " rf ", " ann ", "random forest", "support vector machine", 
+  "regression tree", "decision tree", "neural network", "boosting", "bagging", 
+  "gradient", "bayes",
+  
+  # quality metrics
+  "overall accuracy", "accuracy", "coefficient of determination", "rmse", "mse",
+  "f1", "precision", "auc", " roc ", "recall","sensitivity", "specificity",
+  "mean absolute error", "error", "mae",
+  
+  #to omit 
+  "systematic review", "meta-analysis" , "review"
+)
+```
+
+```{r}
+# new random sample: excluding all reviewed in phase 1 
+not_in_sample1<- subset(citations, !(DOI %in% nina$DOI))
+set.seed(123)
+sample2 <- not_in_sample1[sample(nrow(not_in_sample1), size=100), ]
+
+
+```
+
+```{r}
+# the following was run for each reviewer 
+# example nina 
+metagear_abstract_screening(sample2, "nina_2a")
+
+# initialize screener GUI
+abstract_screener("effort_nina_2a.csv", aReviewer = "nina_2a", 
+                  abstractColumnName = "Abstract.Note", 
+                                        titleColumnName = "Title",
+                                        highlightKeywords = keywords)
+
+```
+
+### Screening abstracts of references
+
+Instructions 1. run keywords line 362
+
+2.  
+
+```{r}
+library(metagear)
+setwd("//cbsp.nl/Productie/secundair/MPOnderzoek/Werk/Bigdata/Projecten/Stage_Nina_Leach_Meta_ML_Quality/data_rcode")
+
+metagear_abstract_screening<- function(data, reviewer){
+  library(metagear)
+  # prime the study‐reference dataset
+  theRefs <- effort_initialize(data)
+  # here one would = distribute screening effort to a team, in this case that is one person 
+  # and save to separate files for each team member
+  theRefs_unscreened <- effort_distribute(theRefs, reviewers = reviewer, 
+                                        effort = 100, save_split = TRUE)
+}
+```
+
+3.  run the applicable chunk below
+
+-   choose between relevance categories: Yes, maybe, no
+-   once you are done reviewing **save** (bottom-right: if you don't save none of the changes are recorded)
+
+#### For Jonas
+
+```{r}
+# Stage 1 
+
+# initialize screener GUI
+abstract_screener("effort_jonas_2a.csv", aReviewer = "jonas_2a", 
+                  abstractColumnName = "Abstract.Note", 
+                                        titleColumnName = "Title",
+                                        highlightKeywords = keywords)
+```
+
+```{r}
+keywords_new <- c(keywords, 
+                  # data related 
+                  "remotely sensed", "remote sensing", "satellite", "earth observation", 
+                  " rs ", "images", "imagery", "sentinel", "landsat", "openstreetmap", 
+                  "google earth engine", "true color", "true colour", "false color",
+                  "false colour", "rgb", "resolution"
+                  ) 
+```
+
+```{r}
+# Stage 2
+# after revieing run:
+s1_review <- read.csv("effort_jonas_2a.csv")
+rev <- subset(s1_review, s1_review$INCLUDE != "NO")
+
+
+metagear_abstract_screening(rev, "jonas_2b")
+
+# initialize screener GUI
+abstract_screener("effort_jonas_2b.csv", aReviewer = "jonas_2b", 
+                  abstractColumnName = "Abstract.Note", 
+                                        titleColumnName = "Title",
+                                        highlightKeywords = keywords_new)
+```
+
+#### For Joep
+
+```{r}
+# initialize screener GUI
+abstract_screener("effort_joep_2a.csv", aReviewer = "joep_2a", 
+                  abstractColumnName = "Abstract.Note", 
+                                        titleColumnName = "Title",
+                                        highlightKeywords = keywords)
+```
+
+```{r}
+# Stage 2
+# after reviewing run:
+s1_review <- read.csv("effort_joep_2a.csv")
+rev <- subset(s1_review, s1_review$INCLUDE != "NO")
+
+
+keywords_new <- c(keywords, 
+                  # data related 
+                  "remotely sensed", "remote sensing", "satellite", "earth observation", 
+                  " rs ", "images", "imagery", "sentinel", "landsat", "openstreetmap", 
+                  "google earth engine", "true color", "true colour", "false color",
+                  "false colour", "rgb", "resolution"
+                  ) 
+
+metagear_abstract_screening(rev, "joep_2b")
+
+# initialize screener GUI
+abstract_screener("effort_joep_2b.csv", aReviewer = "joep_2b", 
+                  abstractColumnName = "Abstract.Note", 
+                                        titleColumnName = "Title",
+                                        highlightKeywords = keywords_new)
+```
+
+# Compair
+
+```{r}
+nina<- read.csv("effort_nina_2a.csv")
+jonas<- read.csv("effort_jonas_2a.csv")
+joep<- read.csv("effort_joep_2a.csv")
+
+ftable(nina$INCLUDE, jonas$INCLUDE, joep$INCLUDE,  dnn = c("nina", "jonas", "joep"))
+
+sum(jonas$INCLUDE == "YES")
+sum(nina$INCLUDE == "YES")
+sum(joep$INCLUDE == "YES")
+```
+
+Stage 1: agreed: 89%
+
+```{r}
+disagreement_ind <- which(nina$INCLUDE != joep$INCLUDE|
+                             nina$INCLUDE != jonas$INCLUDE|
+                             jonas$INCLUDE != joep$INCLUDE)
+disagreement <- nina[disagreement_ind, ]
+
+rev_disagreement <- disagreement|>
+    dplyr::select(Title, Abstract.Note, DOI, INCLUDE)
+
+rev_disagreement$INCLUDE_jonas <- jonas$INCLUDE[disagreement_ind]
+rev_disagreement$INCLUDE_joep <- joep$INCLUDE[disagreement_ind]
+```
+
+### Step 2
+
+```{r}
+jonas_2b <- read.csv("effort_jonas_2b.csv")
+
+nina_2b <- read.csv("effort_nina_2b.csv")
+
+joep_2b <- read.csv("effort_joep_2b.csv")
+
+nina_2b|>
+  group_by(INCLUDE)|>
+  summarise(n = n())
+
+jonas_2b|>
+  group_by(INCLUDE)|>
+  summarise(n = n())
+
+joep_2b|>
+  group_by(INCLUDE)|>
+  summarise(n = n())
+
+```
+
+```{r}
+all<- joep|>
+  dplyr::select(INCLUDE, Title, Abstract.Note, Publication.Year , DOI)
+
+
+all2<- left_join(all, subset(joep_2b, select = c(INCLUDE, DOI)), 
+                 by = "DOI", suffix =c("_joep_a","_joep"))
+
+all2<- left_join(all2, subset(jonas_2b, select = c(INCLUDE, DOI)), 
+                 by = "DOI")
+colnames(all2)[colnames(all2) == "INCLUDE"] <- "INCLUDE_jonas"
+
+all2<- left_join(all2, subset(nina_2b, select = c(INCLUDE, DOI)), 
+                 by = "DOI")
+colnames(all2)[colnames(all2) == "INCLUDE"] <- "INCLUDE_nina"
+
+all2[which(is.na(all2$INCLUDE_joep) & is.na(all2$INCLUDE_jonas) & is.na(all2$INCLUDE_nina)), 6:8] <- "NO"
+```
+
+```{r}
+ftable(all2$INCLUDE_nina, all2$INCLUDE_jonas, all2$INCLUDE_joep,  dnn = c("nina", "jonas", "joep"))
+```
+
+67% over all agreement 21% YES that we agree atleast one yes:
+
+```{r}
+sum(all2$INCLUDE_joep == "YES"| all2$INCLUDE_nina == "YES"| all2$INCLUDE_jonas == "YES", na.rm = T)
+
+sum(all2$INCLUDE_joep == "YES",  na.rm = T)
+sum(all2$INCLUDE_nina == "YES",  na.rm = T)
+sum(all2$INCLUDE_jonas == "YES",  na.rm = T)
+```
+
+## Adding phase 1 for total agreement
+
+```{r}
+all3<- nina_1|>
+  dplyr::select(INCLUDE, Title, Abstract.Note, Publication.Year ,DOI)
+
+
+all3<- left_join(all3, subset(jonas_1, select = c(INCLUDE, DOI)), 
+                 by = "DOI")
+colnames(all3)[colnames(all3) == "INCLUDE.x"] <- "INCLUDE_nina"
+colnames(all3)[colnames(all3) == "INCLUDE.y"] <- "INCLUDE_jonas"
+
+all3<- left_join(all3, subset(joep_1, select = c(INCLUDE, DOI)), 
+                 by = "DOI")
+colnames(all3)[colnames(all3) == "INCLUDE"] <- "INCLUDE_joep"
+
+```
+
+```{r}
+all_reviewed <- rbind(all3, all2[, -1])
+
+ftable(all_reviewed$INCLUDE_nina, all_reviewed$INCLUDE_jonas, all_reviewed$INCLUDE_joep,  dnn = c("nina", "jonas", "joep"))
+
+```
+
+```{r}
+x<- subset(all_reviewed, subset = all_reviewed$Publication.Year >= 2022)
+
+ftable(x$INCLUDE_nina, x$INCLUDE_jonas, x$INCLUDE_joep,  dnn = c("nina", "jonas", "joep"))
+```
+
+```{r}
+(44+36)/127
+
+```
+
+```{r}
+citations_after22<- subset(citations, subset = all_reviewed$Publication.Year >= 2022)
+
+nrow(citations_after22)*(36/127)
+
+```
+
+# Journals
+
+```{r}
+#citations <- read.csv("all_citations.csv")
+
+#unique(citations$Publication.Title)
+
+library(dplyr)
+citations|>
+  group_by(Publication.Title)|>
+  summarize(n = n())|>
+  arrange(desc(n))
+
+```

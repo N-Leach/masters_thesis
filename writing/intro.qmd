@@ -1,0 +1,37 @@
+# Introduction {style="text-align: justify"}
+
+::: {style="text-align: justify"}
+The Sustainable Development Goals (SDGs) are framework of 17 objectives aimed at addressing global challenges, including poverty, pollution, climate change, and the loss of biodiversity. These goals were established by the United Nations in 2015 with the aim of accomplishing them by 2030. However, as we surpass the midpoint of the SDGs' timeline, it is evident that significant setbacks have limited progress toward these goals [@un_desa_sustainable_2023]. Therefore, effective monitoring is crucial to the provide insights needed to understand these setbacks, measure progress accurately, and identify where interventions are the most needed [@burke2021]. Traditional approaches, such as land surveying and household surveys are rich in detail but are costly, sparsity collected, and difficult to verify [@burke2021]. [Recognizing these problems, the United Nations emphasizes the importance of adopting new data sources and methodologies, such as remote sensing, machine learning, crowdsourcing, and citizen-generated data, to overcome these challenges and advance toward the 2030 targets[@un_desa_sustainable_2023]]{style="text-align: justify"}.
+
+In contrast to the scarcity of ground-based data the data collected from a distance (remote sensing) via satellite, aircraft, or drones is increasing both in terms of quantity and quality [@burke2021]. Remote sensing offers a cost-effective approach to monitoring wide-ranging geographic areas [@thapa_deep_2023[; @khatami_meta-analysis_2016;]{style="text-align: justify"}@burke2021]. [The potential applications are numerous. Examples include monitoring of land use and degradation, forestry, biodiversity, agriculture, disaster prediction, water resources, public health, urban planning, poverty, and the management and preservation of world heritage sites \[@chen_bibliometric_2023; @khatami_meta-analysis_2016; @zhang_review_2022; @thapa_deep_2023; @yin_review_2023; @holloway_statistical_2018; @machicao_mitigation_2022;]{style="text-align: justify"}@burke2021\][.]{style="text-align: justify"}
+
+The rapid availability of remote sensing data coincides with the rapid development and availability of machine learning (ML) algorithms [@shi2022]. [The magnitude of possible applications]{style="text-align: justify"} and increase of availability of [diverse data sources]{style="text-align: justify"} and methodology has lead to a rapid increase in amount of published research papers in this field [@khatami2016; @burke2021]. However, most individual studies are limited to a single geographical area and have very specific focus. As there is generally more incentive for researchers to make innovative methods rather reproduce existing results or apply validated methods to various locations or contexts [@burke2021]. This localized approach makes it difficult to draw general guidelines for selecting the most suitable processes to achieve high accuracy for various contexts [@burke2021; @shi2022].
+
+### 
+:::
+
+## Previous research
+
+Table 1. List and a brief summary of previous reviews related to the topic.
+
+::: {style="text-align: justify"}
+[Studies have previously examined the application of remote sensing for SDG monitoring (see @yin_review_2023; @holloway_statistical_2018;]{style="text-align: justify"}@burke2021 ). These reviews typically focus on one context (e.g. satellite imagery for poverty prediction [@hall2023a] or focus on descriptive results (e.g. [@yin_review_2023]). Some meta-analysis make comparisons to attribute accuracy improvements to individual features (see: @khatami_meta-analysis_2016 ).
+
+there is a significant gap in the literature.....
+:::
+
+## The present study
+
+::: {style="text-align: justify"}
+The present work is a review systematically assessing the variability of machine learning methods in SDGs monitoring applications, with a specific focus on identifying study features that may impact their performance. Review studies are important for creating a comprehensive overview, assessing the accuracy of different methods, as many factors or study features can explain heterogeneity of quality metrics among individual studies. For example, the data collecting device (e.g. satellite), image type, algorithm applied, input features, pre- and post-processing techniques, the use of ancillary data.
+
+With is in mind the aim of this review is to recreate a guideline with universal applicability to improve model accuracy though the election of appropriate algorithms
+
+-   systematic review application of machine learning methods in remote sensing, particularly focusing on research related to the SDGs
+
+-   Explaining [variability of]{style="text-align: justify"} observed accuracy (quality metrics) across different remote sensing applications. with a meta-analysis
+
+-   develop and apply a meta-regression model to identify study features (meta-features) that explain the variation in classification quality.
+:::
+
+## 

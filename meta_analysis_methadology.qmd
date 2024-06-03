@@ -1,0 +1,138 @@
+## Meta-analysis methodology
+
+What is it?
+
+### from doing meta-analysis
+
+LOOK AT:
+
+-   
+
+-   Borenstein, Michael, Larry V Hedges, Julian PT Higgins, and Hannah R Rothstein. 2011. *Introduction to Meta-Analysis*. John Wiley & Sons. chapter 40
+
+-   https://absolutelymaybe.plos.org/2017/07/03/5-tips-for-understanding-data-in-meta-analyses/
+
+-   https://statistically-funny.blogspot.com/2012/10/a-dip-in-data-pool.html
+
+### Effect size
+
+-   Typically:
+
+-   using overall accuracy as an effect size
+
+    -   proportion
+
+    -   what are the implications of that
+
+    -   what is this true effect I am looking to model
+
+    -   overall effect?
+
+ways to calculate overall effect: DerSimonion--Laird random effects estimator
+
+"Previous research suggest that between-study variation could cause bias (Borenstein 2019). To control for this factor, we estimated three indicators of study heterogeneity: Cochran's Q, I 2, and τ . While Cochran's Q is sensitive to the number of studies and the study size, Higgins and Thompson (2002) suggested to also report I 2, which is not sensitive to the number of studies but to the study size. By contrast, τ is neither sensitive to the number of studies included nor to the study size (Schwarzer, Carpenter, and Rücker 2015)."
+
+confused about how the first sentence leads to the next one
+
+# Analysis plan
+
+1.  check for between study heterogeneity in the "standard" method assuming that results are independent and not from the same study.
+2.  aggregate the results per study (2.1 mean, 2.2. median) check again
+3.  Instead of using SE set to 1
+4.  multilevel
+    1.  3-level: papers are not independent
+    2.  look if you can have more levels
+
+Look at how different methods 1-4 are
+
+Look for outliers/ influenial cases: GOSH plots
+
+Meta-regression
+
+# Results
+
+### Data
+
+```{r}
+library(tidyverse)
+library(readxl)
+extracted_features <- read_excel("extracted_features.xlsx", sheet = "Include",  na = "NA")
+
+citations<- read.csv("appendix/app1-paper_selection/citations.csv")
+
+citations$AutherYear <- paste(strsplit(citations$Author, "[,]")[[1]][1], "et al,", citations$Publication.Year) 
+
+citations_needed<- subset(citations, DOI %in% extracted_features$DOI, 
+                          select = c(DOI, AutherYear, Publication.Title))
+
+
+strsplit(citations$Author, "[,]")[[1]][1]
+sub("\\|.*", "", citations$Author)
+dat <- inner_join(citations_needed, extracted_features, by = "DOI")
+
+length(unique(dat$DOI))
+
+
+```
+
+## Descriptives
+
+plots with locations, table of variable distributions etc
+
+```{r}
+
+```
+
+```{r}
+ggplot(sample, aes(x = OA_reported))+
+  geom_histogram()
+ggplot(sample, aes(x = log(OA_reported/(1-OA_reported))))+
+  geom_histogram()
+```
+
+```{r}
+ggplot(sample, aes(x = log(RS_spectral_bands_no), y = log(OA_reported/(1-OA_reported)), 
+                colour = model_group
+                ))+
+  geom_point()
+```
+
+Data with totals
+
+```{r}
+sum(is.na(sample$'totals(objects_area_validationpoints_pixels)'))
+data <- sample|> drop_na('totals(objects_area_validationpoints_pixels)')
+
+
+```
+
+## Meta-analysis 1: assuming independence
+
+ignoring with in study dependence
+
+```{r}
+library(meta)
+
+data1 <- rowid_to_column(sample, "ID") 
+
+
+m.prop <- metaprop(event = `confusion_matrix diagonal`,
+                   n = total,
+                   studlab = file_name,
+                   data = sample_with_n,
+                   method = "GLMM",
+                   sm = "PLOGIT",
+                  method.random.ci = "HK",
+                   fixed = TRUE,
+                   random = TRUE,
+                   title = "Overall Accuracy")
+summary(m.prop)
+```
+
+### a. Typical calculation of SE
+
+### b. SE = 1
+
+### c. Comparison of the methods
+
+## Meta-analysis 2:

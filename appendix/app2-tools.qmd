@@ -1,0 +1,376 @@
+# Another appendix
+
+```{r}
+library(tidyverse)
+#library(readxl)
+dat<- read_excel("example_data.xlsx", sheet = "main", na = "NA"
+                 )
+
+citations<- read.csv("app1-paper_selection/citations.csv")
+
+citations_needed<- subset(citations, DOI %in% dat$DOI, 
+                          select = c(DOI, Author, Publication.Year))
+
+sample <- inner_join(citations_needed, dat, by = "DOI")
+
+
+sample$RS_spatital_resolution_m <- as.numeric(sample$RS_spatital_resolution_m)
+sample$RS_spectral_bands_no <- as.numeric(sample$RS_spectral_bands_no)
+
+```
+
+```{r}
+
+ggplot(sample, aes(x = log(OA/(1-OA))))+
+  geom_histogram()
+```
+
+```{r}
+ggplot(sample, aes(x = log(RS_spectral_bands_no), y = log(OA/(1-OA)), 
+                colour = model_group
+                ))+
+  geom_point()
+```
+
+```{r, message = FASLE, warning=FALSE}
+library(GGally)
+ggpairs(sample, c("OA","fraction_majority_class", "model_group", 
+                  "RS_spectral_bands_no"
+                  ))
+
+```
+
+```{r}
+ggplot(sample, aes(x = number_classes, y =log(OA/(1-OA))#, 
+                #colour = file_name
+                ))+
+  geom_point()
+ 
+ggplot(sample, aes(x = fraction_majority_class, y =log(OA/(1-OA))#, 
+                #colour = file_name
+                ))+
+  geom_point()
+ggplot(sample, aes(x = log(RS_spectral_bands_no), y =log(OA/(1-OA))#, 
+                #colour = file_name
+                ))+
+  geom_point()
+```
+
+```{r}
+
+fit <- lm(log(OA)~ model_group + RS_spectral_bands_no + RS_spatital_resolution_m +
+            number_classes + fraction_majority_class, 
+          data = sample)
+summary(fit) 
+
+```
+
+# Doing Meta-Analysis in R: guide
+
+Effect size: "an effect size is defined as a metric quantifying the relationship between two entities. It captures the **direction** and **magnitude** of this relationship." $\theta$ \<- **true effect size.**
+
+```{r}
+library(meta)
+
+sample <- rowid_to_column(sample, "ID") 
+
+with_n <- which(!is.na(sample$total)
+                & !is.na(sample$`confusion_matrix diagonal`))
+
+
+sample_with_n <- sample[with_n, ]
+sample_with_n <- sample_with_n[-21, ]
+
+m.prop <- metaprop(event = `confusion_matrix diagonal`,
+                   n = total,
+                   studlab = file_name,
+                   data = sample_with_n,
+                   method = "GLMM",
+                   sm = "PLOGIT",
+                  method.random.ci = "HK",
+                   fixed = TRUE,
+                   random = TRUE,
+                   title = "Overall Accuracy")
+summary(m.prop)
+
+
+
+```
+
+```{r}
+meta::forest(m.prop, 
+             sortvar = TE)
+
+```
+
+# Khatami et al
+
+inspecting data from another meta analysis,
+
+Other meta analysis in this "field" do not use SE!
+
+```{r}
+Khatami_dat <- read_excel("khatami.xlsx", sheet = "Sheet1")
+
+ggplot(Khatami_dat)+
+  geom_histogram(aes(OA))
+```
+
+```{r}
+ggplot(Khatami_dat)+
+  geom_boxplot(aes(model, OA))
+```
+
+\###########################################
+
+# Landcover1 example
+
+paper: https://www.tandfonline.com/doi/full/10.1080/15481603.2022.2115589
+
+Note that the sample size is from the training set not the validation set! (checked that the proportions are roughly the same???)
+
+```{r}
+dat<- read_excel("example_data.xlsx", sheet = "test_landcover1", na = "NA"
+                 )
+
+landcover1<- subset(dat, subset = file_name == "landcover_1", 
+                    select = c(RS_device_specifics, bands, RS_spatital_resolution_m, 
+                               model_as_named, number_classes, total, OA))
+
+
+```
+
+calculating standard error (3.6: @harrer)
+
+```{r}
+landcover1$OA <- as.numeric(landcover1$OA)
+landcover1$total <- as.numeric(landcover1$total)
+landcover1 <- rowid_to_column(landcover1, "ID") 
+
+# (3.7)
+landcover1$OA_logit <- log((landcover1$OA/ (1-landcover1$OA)), base = exp(1))
+# (3.8)
+landcover1$SE_OA_logit <- sqrt((1/(landcover1$total* landcover1$OA ))+
+                                 (1/((landcover1$total* (1 -landcover1$OA))))
+                               )
+
+
+```
+
+effect size pooling
+
+```{r}
+m.gen <- metagen(TE = OA_logit, 
+                 seTE = SE_OA_logit, 
+                 studlab = ID, 
+                 method.random.ci = "HK",
+                 data = landcover1, 
+                 # clustering the model types cluster =model_as_named
+                 )
+summary(m.gen)
+```
+
+```{r}
+landcover1$k <- round(landcover1$OA *landcover1$total)
+
+m.prop <- metaprop(event = k,
+                   n = total,
+                   studlab = ID,
+                   data = landcover1,
+                   method = "GLMM",
+                   sm = "PLOGIT",
+                   method.random.ci = "HK",
+                   fixed = FALSE,
+                   random = TRUE,)
+summary(m.prop)
+
+
+
+```
+
+very high
+
+### Probit reg model
+
+```{r}
+ggplot(landcover1)+
+  geom_boxplot(mapping = aes(x = model_as_named, y = OA))+
+  coord_flip()
+```
+
+```{r}
+# grouping ML models 
+## Convolutional Neural Networks 
+cnn <- c("LeNet", "ResNet", "FCN", "SegNet")
+## Models for Sequential and Time-Series Data
+time <- c("RNN with LSTM", "RNN with GRU", "DRRNN with LSTM", "DRRNN with GRU")
+
+other <-c("MSNN","WCRN") 
+
+
+landcover1$model_groups<- ifelse(landcover1$model_as_named %in% cnn, "CNN", 
+                                 ifelse(landcover1$model_as_named %in% time, "time", 
+                                 ifelse(landcover1$model_as_named %in% other, "other", 
+                                        NA)))
+
+ggplot(landcover1)+
+  geom_boxplot(mapping = aes(x = model_groups, y = OA))+
+  coord_flip()
+
+```
+
+#### subgroup analysis
+
+```{r}
+update(m.prop, 
+       subgroup = model_groups, 
+       tau.common = FALSE)
+```
+
+```{r}
+update(m.prop, 
+       subgroup = RS_device_specifics, 
+       tau.common = FALSE)
+```
+
+```{r}
+library(metafor)
+
+# For subgroup analysis
+res.subgroup <- rma(yi= OA_logit, 
+                    vi = (SE_OA_logit)^2, 
+                    mods = ~ factor(model_groups), 
+                    data=landcover1)
+summary(res.subgroup)
+
+
+```
+
+```{r}
+ggplot(landcover1)+
+  geom_point(aes(x = total, y = OA, colour = RS_device_specifics))
+```
+
+```{r}
+# For meta-regression
+res.metareg <- rma(yi= OA_logit,
+                   sei = SE_OA_logit, 
+                   mods = ~ RS_device_specifics, 
+                   data=landcover1, 
+                   weighted = F, 
+                    test="t" )
+res.metareg
+```
+
+```{r}
+ggplot(landcover1)+
+  geom_boxplot(mapping = aes(x = RS_device_specifics, y = OA))
+```
+
+```{r}
+fitprobit <- glm(OA ~ model_groups + number_classes +RS_device_specifics, 
+                  family = binomial, 
+                  data = landcover1)
+summary(fitprobit)
+
+```
+
+## Testing multilevel
+
+```{r}
+
+sample2<- data.frame(paper = c(rep("landcover_1", nrow(landcover1)), 
+                               sample_with_n$file_name), 
+                     RS_device_specifics = c(landcover1$RS_device_specifics, 
+                         sample_with_n$RS_device_specifics), 
+                     resolution = c(landcover1$RS_spatital_resolution_m , 
+                         sample_with_n$RS_spatital_resolution_m), 
+                     model = c(landcover1$model_as_named, 
+                               sample_with_n$model_as_named), 
+                     number_classes = c(landcover1$number_classes,
+                                         sample_with_n$number_classes), 
+                     event = c(landcover1$k, sample_with_n$`confusion_matrix diagonal`), 
+                     total = c(landcover1$total, sample_with_n$total), 
+                     OA = c(landcover1$OA, sample_with_n$OA)
+                     )
+
+sample2 <- rowid_to_column(sample2, "ID") 
+
+```
+
+```{r}
+
+m.prop <- metaprop(event = event,
+                   n = total,
+                   studlab = ID,
+                   data = sample2,
+                   #data = subset(sample2, paper != "landcover_1"),
+                   method = "GLMM",
+                   sm = "PLOGIT",
+                   method.random.ci = "HK",
+                   fixed = FALSE,
+                   random = TRUE,)
+summary(m.prop)
+```
+
+Not sure how to multilevel a proportions model
+
+```{r}
+# (3.7)
+sample2$OA_logit <- log((sample2$OA/ (1-sample2$OA)), base = exp(1))
+# (3.8)
+sample2$SE <- sqrt((1/(sample2$total* sample2$OA ))+
+                                 (1/((sample2$total* (1 -sample2$OA))))
+                               )
+```
+
+```{r}
+library(metafor)
+full.model <- rma.mv(yi = OA_logit, 
+                     V = SE^2, 
+                     slab = paper,
+                     data = sample2,
+                     random = ~ 1 | paper/ID, 
+                     test = "t", # instead of z - Wald: standnormal dist. 
+                     method = "REML")
+
+summary(full.model)
+```
+
+```{r}
+library(dmetar)
+i2 <- var.comp(full.model)
+summary(i2)
+```
+
+Proportion of within and between study variance is about the same
+
+##### model type as moderator
+
+```{r}
+nn <- c("LeNet", "ResNet", "FCN", "SegNet", "RNN with LSTM", 
+        "RNN with GRU", "DRRNN with LSTM", "DRRNN with GRU", 
+        "MSNN","WCRN") 
+
+sample2$model_groups<- ifelse(sample2$model %in% nn, "NN", 
+                              ifelse(grepl("random forest", sample2$model,
+                                           fixed = TRUE), "RF",
+                              ifelse(grepl("Random Forest", sample2$model, 
+                                           fixed = TRUE), "RF","Other")))
+
+table(sample2$model_groups)
+```
+
+```{r}
+library(metafor)
+full.model <- rma.mv(yi = OA_logit, 
+                     V = SE^2, 
+                     slab = paper,
+                     data = sample2,
+                     random = ~ 1 | paper/ID, 
+                     test = "t", # instead of z - Wald: standnormal dist. 
+                     method = "REML", 
+                     mods = ~ model_groups)
+
+summary(full.model)
+```

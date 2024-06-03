@@ -1,0 +1,9 @@
+# Abstract {.unnumbered}
+
+**Intro**The United Nations SDG report (2023) emphasises embracing new data sources and innovative methodologies, including remote sensing. To leverage these data sources and complement traditional survey data, machine learning can be applied. This growing field of research has an extensive body of literature, so selecting a suitable machine learning method poses a significant challenge. The following is a research proposal for a systematic review and meta-analysis to assess the variability of quality metrics and identify study features that may impact the performance of machine learning methods in remote sensing applications.
+
+**Methods**
+
+**Results**
+
+**Discustion**

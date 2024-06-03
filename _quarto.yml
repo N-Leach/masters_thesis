@@ -1,0 +1,79 @@
+project:
+  type: book
+  output-dir: docs
+
+book:
+  title: "A Meta-Analysis of Machine Learning in Remote Sensing"
+  author: 
+  - name: "Nina Leach"
+    affiliations:
+        - name: "UNIVERSITEIT LEIDEN"
+          department: "STATISTICS AND DATA SCIENCE"
+  
+  sidebar: 
+    background: "#F5F5F5"
+    logo: images/ul.logo.png
+    search: true
+  date: "12 June 2024"
+ 
+  chapters:
+    - index.qmd
+    - writing/intro.qmd
+    - methods.qmd
+    - results.qmd
+    - writing/discussion.qmd
+    
+    - references.qmd
+  # appendices: 
+  #   - appendix/app1-paper_selection/app1-paper_selection.qmd
+ #   - appendix/app3-weird.collection.qmd
+  search:
+    location: navbar
+    type: overlay
+  output-file: leach
+  downloads:
+    -  pdf
+  
+
+# table of content and depth of numbering set at chapter level  
+toc: true
+number-depth: 1
+
+# 
+execute:
+  warning: false
+  massage: false
+
+
+bibliography: references.bib
+format-links: true
+
+format:
+  html:
+    theme: cosmo
+  pdf:
+    template-partials:
+      - template/before-body.tex
+    documentclass: book
+    classoption: ["open=any"]
+    pdf-engine: latexmk
+    pdf-engine-opt: --xelatex
+    latex-max-runs: 3
+    keep-tex: false
+    link-citations: true
+    colorlinks: true
+    papersize: a4
+    fontsize: 11pt
+    
+    linestretch: 1.5
+    geometry:
+      - top=2cm
+      - bottom=2cm
+      - left=2cm
+      - right=2cm
+    
+
+
+
+editor: visual
+
