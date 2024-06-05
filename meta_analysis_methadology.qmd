@@ -74,34 +74,11 @@ dat <- inner_join(citations_needed, extracted_features, by = "DOI")
 
 ```
 
-## Descriptives
+## Descriptive
 
-plots with locations, table of variable distributions etc
-
-```{r}
-
-```
+plots with locations, table of variable distributions et
 
 ```{r}
-ggplot(sample, aes(x = OA_reported))+
-  geom_histogram()
-ggplot(sample, aes(x = log(OA_reported/(1-OA_reported))))+
-  geom_histogram()
-```
-
-```{r}
-ggplot(sample, aes(x = log(RS_spectral_bands_no), y = log(OA_reported/(1-OA_reported)), 
-                colour = model_group
-                ))+
-  geom_point()
-```
-
-Data with totals
-
-```{r}
-sum(is.na(sample$'totals(objects_area_validationpoints_pixels)'))
-data <- sample|> drop_na('totals(objects_area_validationpoints_pixels)')
-
 
 ```
 
@@ -135,3 +112,76 @@ summary(m.prop)
 ### c. Comparison of the methods
 
 ## Meta-analysis 2:
+
+# 04-06-2022
+
+-   Broadly speaking, a meta-analysis can be defined as a systematic literature review supported by statistical methods where the goal is to aggregate and contrast the findings from several related studies (Glass 1976).
+
+-   The term \"effect size\" is used generically throughout this article to denote the outcome measure chosen for a meta-analysis (and does not imply that we are necessarily dealing with a measure that indicates the causal influence of one variable on another).
+
+-   start with $i = 1, ..., k$ independent effect size estimates, each estimating a corresponding (true) effect size. We assume that
+
+$$
+y_i = \theta_i + e_i
+$$
+
+where $y_i$ denotes the observed effect in the i-th study, $\theta_i$ the corresponding (unknown) true effect, $e_i$ is the sampling error, and $e_i \sim N(0, v_i)$. Therefore, the $yi$'s are assumed to be unbiased and normally distributed estimates of their corresponding true effects. The sampling variances (i.e., vi values) are assumed to be known.
+
+When using fixed-effects models, the goal is to make a conditional inference only about the k studies included in the meta-analysis (Hedges and Vevea 1998). For example, a fixed-effects model without moderators provides an answer to the question: How large is the average true effect in the set of k studies included in the meta-analysis?			
+
+the question addressed by a fixed-effects model depends on the type of estimation method used. If weighted least squares is used to fit the model, then the fixed-effects
+model provides an estimate of
+
+$$
+\bar{\theta_w} = \frac{\Sigma w_i \theta_i}{\Sigma w_i}
+$$
+
+the weighted average of the true effects, where the weights are typically set equal to $w_i = 1/v_i$.
+
+On the other hand, unweighted least squares provides an estimate of
+
+$$
+\bar{\theta_u} = \frac{\Sigma\theta_i}{k}
+$$
+
+the simple (unweighted) average of the true effects (Laird and Mosteller 1990).
+
+**Random-effects model**
+
+Most meta-analyses are based on sets of studies that are not exactly identical in their methods and/or the characteristics of the included samples. Differences in the methods and sample characteristics may introduce variability ("heterogeneity") among the true effects. One way to model the heterogeneity is to treat it as purely random. This leads to the random-effects model, given by
+
+$$
+\theta_i = \mu +u_i
+$$
+
+where $u_i \sim N(0, \tau^2)$. Therefore, the true effects are assumed to be normally distributed
+$\theta \sim N(0, \tau ^)$.
+
+The goal is then to estimate μ, the average true effect and $\tau^2$, the (total) amount of heterogeneity among the true effects. If $\tau^2 =0$ , then this implies
+homogeneity among the true effects $\theta_1 = ...= \theta_k = \theta$ and $\mu = \theta$.
+
+Random/mixed-effects models provide an *unconditional inference* about a larger set of studies from which the k studies included in the meta-analysis are assumed to be a random sample (Hedges and Vevea 1998). We typically do not assume that this larger set consists only of studies that have actually been conducted, but instead envision a hypothetical population of studies that comprises studies that have been conducted, that could have been conducted, or that may be conducted in the future. The random-effects model then addresses the question: How large is the average true effect in this larger population of studies (i.e., how large is $\mu$)?
+				
+
+**Therefore, contrary to what is often stated in the literature, it is important to realize that the fixed-effects model does not assume that the true effects are homogeneous.** Fixed-effects models provide perfectly valid inferences under heterogeneity, as long as one is restricting these inferences (i.e., the conclusions about the size of the average effect) to the set of studies included in the meta-analysis.More specifically, to sets of k studies with true effects equal to the true effects of the k studies included in the meta-analysis.
+
+[On the other hand, the random-effects model provides an inference about the average effect in the entire population of studies from which the included studies are assumed to be a random selection. In the special case that the true effects are actually homogeneous, the distinction between the various models disappears, since homogeneity implies that μ = θ ̄w = θ ̄u ≡ θ. However, since there is no infallible method to test whether the true effects are really homogeneous or not, a researcher should decide on the type of inference desired before examining the data and choose the model accordingly. For more details on the distinction between fixed- and random-effects models, see Hedges and Vevea (1998) and Laird and Mosteller (1990).]{style="color: cornflowerblue"}
+			
+
+In essence, the various meta-analytic models are just special cases of the general linear (mixed- effects) model with heteroscedastic sampling variances that are assumed to be known. The random/mixed-effects models can therefore be fitted using a two step approach (Raudenbush 2009).
+
+1.  Amount of (residual) heterogeneity (i.e., τ2) is estimated with one of the various estimators that have been suggested in the literature, including the Hunter-Schmidt estimator (Hunter and Schmidt 2004),...
+
+2.  μ or β0, . . . , βp′ are estimated via weighted least squares with weights equal to wi = 1/(vi + τˆ2), where τˆ2 denotes the estimate of τ2.
+
+Once the parameter estimates have been obtained, Wald-type tests and confidence intervals (CIs) are then easily obtained for μ or β0, . . . , βp′ under the assumption of normality.
+
+Based on the fitted model, we can also obtain fitted/predicted values, residuals, and the best linear unbiased predictions (BLUPs) of the study-specific true effects. The null hypothesis H0 : τ 2 = 0 in random- and mixed-effects models can be tested with Cochran's Q-test (Hedges and Olkin 1985). A confidence interval for τ2 can be obtained with the method described in Viechtbauer (2007a).
+
+Fixed-effects models can be fitted with either weighted or unweighted least squares, again taking into consideration the heteroscedastic sampling variances. In principle, one can also choose between weighted and unweighted least squared when fitting random/mixed-effects models. However, since the parameters remain the same regardless of the method used, weighted estimation is usually to be preferred since it is more efficient. As mentioned above, this provides either an estimate of the weighted or unweighted average of the true effects when not including moderators in the model
+
+***Proportions and transformations***
+
+When the studies provide data for single groups with respect to a dichotomous dependent variable, then the raw proportion, the logit transformed proportion, the arcsine transformed proportion, and the Freeman-Tukey double arcsine transformed proportion are useful out- come measures. Here, one needs to specify xi and ni, denoting the number of individuals experiencing the event of interest and the total number of individuals, respectively. Instead of specifying ni, one can use mi to specify the number of individuals that do not experience the event of interest.
+
+	

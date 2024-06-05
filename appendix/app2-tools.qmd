@@ -1,56 +1,30 @@
 # Another appendix
 
 ```{r}
-library(tidyverse)
-#library(readxl)
-dat<- read_excel("example_data.xlsx", sheet = "main", na = "NA"
-                 )
 
-citations<- read.csv("app1-paper_selection/citations.csv")
-
-citations_needed<- subset(citations, DOI %in% dat$DOI, 
-                          select = c(DOI, Author, Publication.Year))
-
-sample <- inner_join(citations_needed, dat, by = "DOI")
-
-
-sample$RS_spatital_resolution_m <- as.numeric(sample$RS_spatital_resolution_m)
-sample$RS_spectral_bands_no <- as.numeric(sample$RS_spectral_bands_no)
-
-```
-
-```{r}
-
-ggplot(sample, aes(x = log(OA/(1-OA))))+
+ggplot(dat, aes(x = log(OA_reported/(1-OA_reported))))+
   geom_histogram()
 ```
 
 ```{r}
-ggplot(sample, aes(x = log(RS_spectral_bands_no), y = log(OA/(1-OA)), 
+ggplot(dat, aes(x = log(RS_spectral_bands_no), y = log(OA_reported/(1-OA_reported)), 
                 colour = model_group
                 ))+
   geom_point()
 ```
 
-```{r, message = FASLE, warning=FALSE}
-library(GGally)
-ggpairs(sample, c("OA","fraction_majority_class", "model_group", 
-                  "RS_spectral_bands_no"
-                  ))
-
-```
-
 ```{r}
-ggplot(sample, aes(x = number_classes, y =log(OA/(1-OA))#, 
+ggplot(dat, aes(x = number_classes, y= log(OA_reported/(1-OA_reported))#, 
                 #colour = file_name
                 ))+
   geom_point()
+
  
-ggplot(sample, aes(x = fraction_majority_class, y =log(OA/(1-OA))#, 
+ggplot(dat, aes(x = fraction_majority_class, log(OA_reported/(1-OA_reported))#, 
                 #colour = file_name
                 ))+
   geom_point()
-ggplot(sample, aes(x = log(RS_spectral_bands_no), y =log(OA/(1-OA))#, 
+ggplot(dat, aes(x = log(RS_spectral_bands_no), y =log(OA/(1-OA))#, 
                 #colour = file_name
                 ))+
   geom_point()
@@ -60,7 +34,7 @@ ggplot(sample, aes(x = log(RS_spectral_bands_no), y =log(OA/(1-OA))#,
 
 fit <- lm(log(OA)~ model_group + RS_spectral_bands_no + RS_spatital_resolution_m +
             number_classes + fraction_majority_class, 
-          data = sample)
+          data = dat)
 summary(fit) 
 
 ```
@@ -72,14 +46,14 @@ Effect size: "an effect size is defined as a metric quantifying the relationship
 ```{r}
 library(meta)
 
-sample <- rowid_to_column(sample, "ID") 
+dat <- rowid_to_column(dat, "ID") 
 
-with_n <- which(!is.na(sample$total)
-                & !is.na(sample$`confusion_matrix diagonal`))
+with_n <- which(!is.na(dat$total)
+                & !is.na(dat$`confusion_matrix diagonal`))
 
 
-sample_with_n <- sample[with_n, ]
-sample_with_n <- sample_with_n[-21, ]
+dat_with_n <- dat[with_n, ]
+dat_with_n <- dat_with_n[-21, ]
 
 m.prop <- metaprop(event = `confusion_matrix diagonal`,
                    n = total,

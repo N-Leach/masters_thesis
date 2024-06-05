@@ -4,9 +4,9 @@ X articles were included with Y model records for meta-analysis extracted. Most 
 
 ::: {#tbl-extracted_features}
 | Feature                 | Definition                                                                                    | value/categories                                                                                 |
-|-----------------|---------------------------|----------------------------|
+|------------------|--------------------------|----------------------------|
 | Paper ID                | DOI used as identification number of the article                                              |                                                                                                  |
-| Author(s), year, DOI    | Name(s) of authers                                                                            |                                                                                                  |
+| Author(s), year, DOI    | Name(s) of authors                                                                            |                                                                                                  |
 | Title                   | Title of the article                                                                          |                                                                                                  |
 | Year                    | Publication Year                                                                              |                                                                                                  |
 | Publication name        | Name of journal that published paper                                                          |                                                                                                  |
@@ -49,6 +49,8 @@ citations_needed<- subset(citations, DOI %in% extracted_features$DOI,
 
 dat <- inner_join(citations_needed, extracted_features, by = "DOI")
 
+dat$OA <- ifelse(is.na(dat$OA_reported), dat$OA_calculated, dat$OA_reported)
+
 
 ```
 
@@ -78,30 +80,44 @@ dat %>%
 -   does OA increase with publication date
 
 ```{r}
-ggplot(dat, mapping = aes(x =Publication.Year, y = OA_reported, colour = AuthorYear))+
+ggplot(dat, mapping = aes(x =Publication.Year, y = OA, colour = AuthorYear))+
   geom_point() +
   geom_smooth(formula = 'y ~ x', method = "lm", se = FALSE, color = "black") 
 
 ```
 
 ```{r}
+ggplot(dat, mapping = aes(x =Publication.Year, y = OA_reported, colour = AuthorYear))+
+  geom_point() +
+  geom_smooth(formula = 'y ~ x', method = "lm", se = FALSE, color = "black") 
+```
+
+```{r}
+ggplot(dat, mapping = aes(x =Publication.Year, y = OA_calculated, colour = AuthorYear))+
+  geom_point() +
+  geom_smooth(formula = 'y ~ x', method = "lm", se = FALSE, color = "black") 
+```
+
+```{r}
 mean_data <- dat %>%
   group_by(Publication.Year, AuthorYear) %>%
   summarise(
-    mean_OA_reported = mean(OA_reported, na.rm = TRUE),
-    min_OA_reported = min(OA_reported, na.rm = TRUE),
-    max_OA_reported = max(OA_reported, na.rm = TRUE)
+    mean_OA = mean(OA_reported, na.rm = TRUE),
+    min_OA= min(OA_reported, na.rm = TRUE),
+    max_OA = max(OA_reported, na.rm = TRUE)
   )
 
 
-ggplot(mean_data, aes(x = Publication.Year, y = mean_OA_reported, colour = AuthorYear)) +
+ggplot(mean_data, aes(x = AuthorYear, y = mean_OA, colour = AuthorYear)) +
   geom_point() +
-  geom_errorbar(aes(ymin = min_OA_reported, ymax = max_OA_reported), width = 0.2) +
-  geom_smooth(formula = 'y ~ x', method = "lm", se = FALSE, color = "black") + 
+  geom_errorbar(aes(ymin = min_OA, ymax = max_OA), width = 0.2) +
+  
   labs(x = "Publication Year", 
        y = "Mean OA Reported", 
        title = "Mean OA Reported + Range 'Error Bars'") +
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+  coord_flip()
+
 ```
 
 #### Study characteristics
@@ -109,10 +125,6 @@ ggplot(mean_data, aes(x = Publication.Year, y = mean_OA_reported, colour = Autho
 -   table: description of information extracted from the included papers
 
 -   total number papers
-
-```{r}
-length(unique(dat$AuthorYear))
-```
 
 -   distributions of features
 
@@ -130,14 +142,185 @@ table(dat$model_group)
 
 ```{r}
 
+ggplot(dat, aes(x = fraction_majority_class, log(OA/(1-OA))#, 
+                #colour = file_name
+                ))+
+  geom_point()+
+  geom_smooth(method="lm")
+```
+
+### **Meta-Analysis**
+
+```{r}
+ggplot(dat, aes(x = transf.arcsin(OA)))+
+  geom_histogram()
+```
+
+### Missing values
+```{r}
+colSums(is.na(dat[, 20:30]))
+```
+missing by paper: 
+```{r}
+isna_data <- dat|>
+  group_by(AuthorYear) |>
+  summarise(total = sum(is.na(total)), 
+            event = sum(is.na(confusion_matrix_diagonal)), 
+            OA_reported = sum(is.na(OA_reported)), 
+            OA_calculated = sum(is.na(OA_calculated)),
+            OA = sum(is.na(OA))
+            )|>
+  filter(rowSums(across(total:OA)) != 0)
+isna_data
+```
+
+
+
+```{r}
+sum(isna_data$total ==0)
+```
+
+to use metaprop 7 studies are excluded 
+- metaprop also does logit transformation so OA = 1 is a problem 
+
+
+
+
+
+
+
+
+
+
+_______________________________________________
+
+Method 1: `metaprop` function to pool proportions   
+
+-   the function does a logit-transformation before the meta analysis `sm = "PLOGIT`
+
+-   A GLMM is fit: where
+
+$$\mu = \text{intercept } \beta_0 $$
+
+for metaprop: the event and the total are needed: 65 values are missing 
+
+
+```{r}
+library(meta)
+m.prop <- metaprop(event = confusion_matrix_diagonal,
+                   n = total,
+                   studlab = AuthorYear,
+                   data = dat,
+                   method = "GLMM",
+                   sm = "PLOGIT",
+                   fixed = FALSE,
+                   random = TRUE,
+                   method.random.ci = "HK")
+summary(m.prop)
+```
+
+
+
+
+```{r}
+library(metafor)
+
+res <- rma.glmm(measure="PLO", # PLO" for the (logit transformed) proportion,
+                xi=confusion_matrix_diagonal,# event
+                ni=total, #group size
+                data=dat
+                )
+summary(res) 
+```
+
+
+calculaing SE
+
+```{r}
+sum(isna_data$OA_reported ==0)
+subset(isna_data, OA_reported !=0)
+subset(isna_data, (total !=0))
+```
+
+
+```{r}
+dat_OA_rep <- subset(dat, !(is.na(OA_reported)))
+
+# (3.7)
+dat_OA_rep$OA_logit <- log((dat_OA_rep$OA_reported/ (1-dat_OA_rep$OA_reported)))
+# (3.8)
+dat_OA_rep$SE_OA_logit <- sqrt((1/(dat_OA_rep$total* dat_OA_rep$OA_reported))+
+                                 (1/((dat_OA_rep$total* (1 -dat_OA_rep$OA_reported))))
+                               )
 
 ```
 
--   maybe pair plot to show associations between features
+```{r}
+full.model <- rma.mv(yi = OA_logit, 
+                     V = SE_OA_logit, 
+                     slab = AuthorYear,
+                     data = dat_OA_rep,
+                     #random = ~ 1 | AuthorYear, 
+                     test = "t", 
+                     method = "REML")
+summary(full.model)
+```
 
-#### **Meta-Analysis Results**:
 
--   pooled effect sizes and confidence intervals.
+### SE = 1
+
+```{r}
+dat_OA_rep$SE1 <- 1
+
+SE1.model <- rma.mv(yi = OA_logit, 
+                     V = SE1, 
+                     slab = AuthorYear,
+                     data = dat_OA_rep,
+                     #random = ~ 1 | AuthorYear, 
+                     test = "t", 
+                     method = "REML")
+summary(SE1.model)
+```
+
+```{r}
+m.gen_SE1 <- metagen(TE = transf.arcsin(OA), 
+                 seTE = SE1, 
+                 studlab = AuthorYear, 
+                 method.random.ci = "HK",
+                 data = dat, 
+                 )
+summary(m.gen_SE1)
+
+m.gen <- metagen(TE = OA_logit, 
+                 seTE = SE_OA_logit, 
+                 studlab = AuthorYear, 
+                 method.random.ci = "HK",
+                 data = dat_OA_rep, 
+                 )
+summary(m.gen)
+```
+
+
+
+```{r}
+dat_OA_rep <- rowid_to_column(dat, "ID") 
+
+
+lvl3.model <- rma.mv(yi = OA_logit, 
+                     V = SE_OA_logit, 
+                     slab = AuthorYear,
+                     data = dat_OA_rep,
+                     random = ~ 1 | AuthorYear/ID, 
+                     test = "t", 
+                     method = "REML" #, 
+                     #mods = ~model_group
+                    )
+summary(lvl3.model)
+```
+
+```{r}
+
+```
 
 -   maybe with forest plots to visualize the individual study estimates (I have multiple results from one paper so maybe not the best method)
 
